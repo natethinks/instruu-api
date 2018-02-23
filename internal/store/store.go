@@ -10,6 +10,9 @@ type Service interface {
 	// User Functions
 	CreateUser(user User) (int64, error)
 	GetUser(ID int64) (User, error)
+	PatchUser(user User) error
+	DeleteUser(ID int64) error
+	GetUsers() ([]User, error)
 	//GetUsers() ([]User, error)
 	//GetUserGroup(ID int64) ([]User, error)
 	//UpdateUser(user User) error
@@ -41,4 +44,5 @@ type User struct {
 	FirstName string `json:"firstname"`
 	LastName  string `json:"lastname"`
 	Verified  bool   `json:"verified"`
+	password  string
 }

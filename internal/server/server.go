@@ -13,14 +13,15 @@ import (
 	"github.com/natethinks/instruu-api/internal/store"
 )
 
-type server struct {
+// Server abstracts handlers and the store service
+type Server struct {
 	sto     store.Service
 	handler http.Handler
 }
 
 // New creates a new server from a store and populates the handler
-func New(sto store.Service) *server {
-	s := &server{sto: sto}
+func New(sto store.Service) *Server {
+	s := &Server{sto: sto}
 
 	router := mux.NewRouter()
 
@@ -34,8 +35,8 @@ func New(sto store.Service) *server {
 	router.Handle("user/{id}", handlers.LoggingHandler(os.Stdout, allowedMethods(
 		[]string{"OPTIONS", "GET", "PUT", "PATCH", "DELETE"},
 		handlers.MethodHandler{
-			"GET":    http.HandlerFunc(s.getUser), // created
-			"PUT":    http.HandlerFunc(s.putUser),
+			"GET": http.HandlerFunc(s.getUser), // created
+			//"PUT":    http.HandlerFunc(s.putUser),
 			"PATCH":  http.HandlerFunc(s.patchUser),
 			"DELETE": http.HandlerFunc(s.deleteUser),
 		})))
@@ -63,7 +64,7 @@ func New(sto store.Service) *server {
 }
 
 // Run starts the server listening on what address is specified
-func (s *server) Run(addr string) error {
+func (s *Server) Run(addr string) error {
 	return http.ListenAndServe(addr, s.handler)
 }
 
@@ -90,7 +91,7 @@ func allowedMethods(methods []string, next http.Handler) http.Handler {
 //
 //
 
-func (s *server) getUsers(w http.ResponseWriter, r *http.Request) {
+func (s *Server) getUsers(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("getUsers() called")
 	//users, err := s.sto.GetUsers()
 	//if err != nil {
@@ -106,7 +107,7 @@ func (s *server) getUsers(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (s *server) createUser(w http.ResponseWriter, r *http.Request) {
+func (s *Server) createUser(w http.ResponseWriter, r *http.Request) {
 	var user store.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -124,7 +125,7 @@ func (s *server) createUser(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (s *server) getUser(w http.ResponseWriter, r *http.Request) {
+func (s *Server) getUser(w http.ResponseWriter, r *http.Request) {
 	rawID := mux.Vars(r)["id"]
 	fmt.Println("s.getUser() called")
 
@@ -148,17 +149,17 @@ func (s *server) getUser(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (s *server) putUser(w http.ResponseWriter, r *http.Request) {
+func (s *Server) putUser(w http.ResponseWriter, r *http.Request) {
 
 	return
 }
 
-func (s *server) patchUser(w http.ResponseWriter, r *http.Request) {
+func (s *Server) patchUser(w http.ResponseWriter, r *http.Request) {
 
 	return
 }
 
-func (s *server) deleteUser(w http.ResponseWriter, r *http.Request) {
+func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request) {
 
 	return
 }
@@ -168,32 +169,32 @@ func (s *server) deleteUser(w http.ResponseWriter, r *http.Request) {
 //
 //
 
-func (s *server) getResources(w http.ResponseWriter, r *http.Request) {
+func (s *Server) getResources(w http.ResponseWriter, r *http.Request) {
 
 	return
 }
 
-func (s *server) createResource(w http.ResponseWriter, r *http.Request) {
+func (s *Server) createResource(w http.ResponseWriter, r *http.Request) {
 
 	return
 }
 
-func (s *server) getResource(w http.ResponseWriter, r *http.Request) {
+func (s *Server) getResource(w http.ResponseWriter, r *http.Request) {
 
 	return
 }
 
-func (s *server) putResource(w http.ResponseWriter, r *http.Request) {
+func (s *Server) putResource(w http.ResponseWriter, r *http.Request) {
 
 	return
 }
 
-func (s *server) patchResource(w http.ResponseWriter, r *http.Request) {
+func (s *Server) patchResource(w http.ResponseWriter, r *http.Request) {
 
 	return
 }
 
-func (s *server) deleteResource(w http.ResponseWriter, r *http.Request) {
+func (s *Server) deleteResource(w http.ResponseWriter, r *http.Request) {
 
 	return
 }

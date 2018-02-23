@@ -46,7 +46,24 @@ CREATE TABLE IF NOT EXISTS resources (
 	name		varchar(256),
 	description text,
 	url			varchar(256),
-	approved	BOOLEAN NOT NULL DEFAULT FALSE
+	approved	BOOLEAN NOT NULL DEFAULT FALSE,
+	creator		integer references users(id),
+	PRIMARY KEY (url)
+)`
+
+const tagsTableCreationQuery = `
+CREATE TABLE IF NOT EXISTS tags (
+	id			SERIAL PRIMARY KEY,
+	name		varchar(256),
+	PRIMARY KEY name
+)`
+
+const tagTableCreationQuery = `
+CREATE TABLE IF NOT EXISTS tag (
+	id			SERIAL PRIMARY KEY,
+	resource	integer references resources(id) ON DELETE CASCADE,
+	tag			integer references tags(id) ON DELETE CASCADE,
+	PRIMARY KEY (resource, tag)
 )`
 
 // New connects to a postgres server with specified options and returns a store.Service
@@ -87,6 +104,39 @@ func (s *service) GetUser(id int64) (user store.User, err error) {
 		err = store.ErrNoResults
 	}
 	return user, err
+}
+
+func (s *service) PatchUser(user store.User) (err error) {
+	fmt.Println("s.PatchUser() called")
+	fmt.Println(user)
+	return nil
+}
+
+func (s *service) DeleteUser(id int64) (err error) {
+	fmt.Println("s.DeleteUser() called")
+	fmt.Println(id)
+	return nil
+}
+
+func (s *service) GetUsers() (users []store.User, err error) {
+	fmt.Println("s.GetUsers() called")
+
+	rows, err := s.db.Query("SELECT * FROM users")
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	} else if err == sql.ErrNoRows {
+		err = store.ErrNoResults
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var user store.User
+		if err = rows.Scan(&user); err != nil {
+			return users, err
+		}
+		users = append(users, user)
+	}
+	return
 }
 
 func (s *service) Close() error {
