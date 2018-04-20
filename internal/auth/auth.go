@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 
+	"golang.org/x/crypto/bcrypt"
+
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/natethinks/instruu-api/internal/respond"
 	"github.com/natethinks/instruu-api/internal/store"
@@ -88,4 +90,29 @@ func SecureCheckJWT(h http.Handler) http.Handler {
 			h.ServeHTTP(w, r)
 		}
 	})
+}
+
+// Generate PasswordHash accepts a plaintext password as a string of bytes and returns
+// a salted hash in a string to be stored in the DB
+func GeneratePasswordHash(pwd []byte) string {
+
+	hash, err := bcrypt.GenerateFromPassword(pwd, bcrypt.MinCost)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return string(hash)
+}
+
+func VerifyPassword(hashedPwd string, plainPwd []byte) bool {
+	// Since we'll be getting the hashed password from the DB it
+	// will be a string so we'll need to convert it to a byte slice
+	byteHash := []byte(hashedPwd)
+	err := bcrypt.CompareHashAndPassword(byteHash, plainPwd)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	return true
 }

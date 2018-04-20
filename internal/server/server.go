@@ -25,6 +25,12 @@ func New(sto store.Service) *Server {
 
 	router := mux.NewRouter()
 
+	router.Handle("/auth", handlers.LoggingHandler(os.Stdout, allowedMethods(
+		[]string{"POST"},
+		handlers.MethodHandler{
+			"POST": http.HandlerFunc(s.auth),
+		})))
+
 	router.Handle("/user", handlers.LoggingHandler(os.Stdout, allowedMethods(
 		[]string{"OPTIONS", "GET", "POST"},
 		handlers.MethodHandler{
@@ -32,13 +38,19 @@ func New(sto store.Service) *Server {
 			"POST": http.HandlerFunc(s.createUser), // created
 		})))
 
-	router.Handle("user/{id}", handlers.LoggingHandler(os.Stdout, allowedMethods(
+	router.Handle("/user/{id}", handlers.LoggingHandler(os.Stdout, allowedMethods(
 		[]string{"OPTIONS", "GET", "PUT", "PATCH", "DELETE"},
 		handlers.MethodHandler{
 			"GET": http.HandlerFunc(s.getUser), // created
 			//"PUT":    http.HandlerFunc(s.putUser),
 			"PATCH":  http.HandlerFunc(s.patchUser),
 			"DELETE": http.HandlerFunc(s.deleteUser),
+		})))
+
+	router.Handle("/valid/user", handlers.LoggingHandler(os.Stdout, allowedMethods(
+		[]string{"POST"},
+		handlers.MethodHandler{
+			"POST": http.HandlerFunc(s.checkUsername),
 		})))
 
 	router.Handle("/resource", allowedMethods(
@@ -86,34 +98,53 @@ func allowedMethods(methods []string, next http.Handler) http.Handler {
 	})
 }
 
-// User Functions
-//
-//
-//
+// Auth Functions
 
-func (s *Server) getUsers(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("getUsers() called")
-	//users, err := s.sto.GetUsers()
-	//if err != nil {
-	//	if err == store.ErrNoResults {
-	//		users = []store.User{}
-	//	} else {
-	//		respond.JSON(w, err)
-	//		return
-	//	}
-	//}
-
-	//respond.JSON(w, users)
-	return
-}
-
-func (s *Server) createUser(w http.ResponseWriter, r *http.Request) {
+func (s *Server) auth(w http.ResponseWriter, r *http.Request) {
+	// grab the username and password from the request
 	var user store.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-	fmt.Println(user)
+
+	jwt, err := s.sto.Auth(user)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		respond.JSON(w, err)
+		return
+	}
+
+	respond.JSON(w, map[string]string{"jwt": jwt})
+	return
+}
+
+// User Functions
+
+func (s *Server) getUsers(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("getUsers() called")
+	users, err := s.sto.GetUsers()
+	if err != nil {
+		if err == store.ErrNoResults {
+			users = []store.User{}
+		} else {
+			fmt.Println(err)
+			respond.JSON(w, err)
+			return
+		}
+	}
+
+	respond.JSON(w, users)
+	return
+}
+
+func (s *Server) createUser(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("createUser() called")
+	var user store.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
 
 	id, err := s.sto.CreateUser(user)
 	if err != nil {
@@ -161,6 +192,26 @@ func (s *Server) patchUser(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request) {
 
+	return
+}
+
+// Validation Functions
+
+func (s *Server) checkUsername(w http.ResponseWriter, r *http.Request) {
+	var user store.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	err := s.sto.CheckUsername(user)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	return
 }
 
